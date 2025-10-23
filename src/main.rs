@@ -4,6 +4,8 @@ use std::path::Path;
 use std::time::{SystemTime, UNIX_EPOCH};
 use polars::prelude::*;
 
+const MICROSECONDS_PER_SECOND: f64 = 1_000_000.0;
+
 fn read_csv_data(path: &Path) -> Result<Vec<(String, Vec<[f64; 2]>)>, Box<dyn std::error::Error>> {
     let df = CsvReadOptions::default()
         .try_into_reader_with_file_path(Some(path.to_path_buf()))?
@@ -72,7 +74,7 @@ fn create_plot_app(traces: Vec<(String, Vec<[f64; 2]>)>) -> ScopeAppMulti {
     for (trace_name, data) in traces {
         for (idx, point) in data.iter().enumerate() {
             // Use the X value from the data as the timestamp for proper X-axis display
-            let timestamp_us = (point[0] * 1_000_000.0) as i64;
+            let timestamp_us = (point[0] * MICROSECONDS_PER_SECOND) as i64;
             let _ = sink.send_value(idx as u64, point[1], timestamp_us, &trace_name);
         }
     }
