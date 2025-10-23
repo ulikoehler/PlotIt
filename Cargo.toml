@@ -1,0 +1,9 @@
+[package]
+name = "plotit"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+liveplot = "0.1"
+eframe = "0.32"
+polars = { version = "0.44", features = ["lazy", "parquet", "csv"] }
