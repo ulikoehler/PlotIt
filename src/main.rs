@@ -71,7 +71,9 @@ fn create_plot_app(traces: Vec<(String, Vec<[f64; 2]>)>) -> ScopeAppMulti {
     
     for (trace_name, data) in traces {
         for (idx, point) in data.iter().enumerate() {
-            let _ = sink.send_value(idx as u64, point[1], now_us, &trace_name);
+            // Use the X value from the data as the timestamp for proper X-axis display
+            let timestamp_us = (point[0] * 1_000_000.0) as i64;
+            let _ = sink.send_value(idx as u64, point[1], timestamp_us, &trace_name);
         }
     }
     
@@ -114,6 +116,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if traces.is_empty() {
         eprintln!("Error: No data traces found in file");
         std::process::exit(1);
+    }
+    
+    // Print data summary
+    println!("Loaded {} trace(s):", traces.len());
+    for (name, data) in &traces {
+        println!("  - {}: {} data points", name, data.len());
     }
     
     let filename = path.file_name()
