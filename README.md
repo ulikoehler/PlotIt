@@ -55,9 +55,10 @@ This will create two traces: "temperature" and "humidity" plotted against "time"
 
 ## Dependencies
 
-- [liveplot-rs](https://github.com/ulikoehler/liveplot-rs) - Interactive plotting library
-- [eframe](https://github.com/emilk/egui) - GUI framework
-- [polars](https://github.com/pola-rs/polars) - Fast DataFrame library for reading CSV/Parquet
+- [liveplot-rs](https://github.com/ulikoehler/liveplot-rs) 1.0 - Interactive plotting library
+- [eframe](https://github.com/emilk/egui) 0.33 - GUI framework
+- [egui](https://github.com/emilk/egui) 0.33 - Immediate mode GUI library
+- [polars](https://github.com/pola-rs/polars) 0.44 - Fast DataFrame library for reading CSV/Parquet
 
 ## License
 

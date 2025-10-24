@@ -1,10 +1,7 @@
-use liveplot::{channel_multi, ScopeAppMulti};
+use liveplot::{channel_plot, LivePlotApp};
 use std::env;
 use std::path::Path;
-use std::time::{SystemTime, UNIX_EPOCH};
 use polars::prelude::*;
-
-const MICROSECONDS_PER_SECOND: f64 = 1_000_000.0;
 
 fn read_csv_data(path: &Path) -> Result<Vec<(String, Vec<[f64; 2]>)>, Box<dyn std::error::Error>> {
     let df = CsvReadOptions::default()
@@ -61,29 +58,41 @@ fn dataframe_to_traces(df: DataFrame) -> Result<Vec<(String, Vec<[f64; 2]>)>, Bo
     Ok(traces)
 }
 
-fn create_plot_app(traces: Vec<(String, Vec<[f64; 2]>)>) -> ScopeAppMulti {
-    // Create a plot app and send data through the channel
-    let (sink, rx) = channel_multi();
-    
-    // Send all data through the channel
-    let now_us = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_micros() as i64)
-        .unwrap_or(0);
-    
-    for (trace_name, data) in traces {
-        for (idx, point) in data.iter().enumerate() {
-            // Use the X value from the data as the timestamp for proper X-axis display
-            let timestamp_us = (point[0] * MICROSECONDS_PER_SECOND) as i64;
-            let _ = sink.send_value(idx as u64, point[1], timestamp_us, &trace_name);
+struct PlotItApp {
+    plot: LivePlotApp,
+    title: String,
+}
+
+impl PlotItApp {
+    fn new(filename: &str, traces: Vec<(String, Vec<[f64; 2]>)>) -> Self {
+        // Create a plot app with an unused channel (no live data needed)
+        let (_sink, rx) = channel_plot();
+        let mut plot = LivePlotApp::new(rx);
+        plot.time_window = 10.0;
+        plot.max_points = 100_000;
+        plot.show_legend = true;
+        
+        // Set trace data using the new API
+        for (name, data) in traces {
+            plot.set_trace_data(&name, data);
+        }
+        
+        Self {
+            plot,
+            title: format!("PlotIt - {}", filename),
         }
     }
-    
-    let mut plot = ScopeAppMulti::new(rx);
-    plot.time_window = 10.0;
-    plot.max_points = 100_000;
-    
-    plot
+}
+
+impl eframe::App for PlotItApp {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        egui::TopBottomPanel::top("top").show(ctx, |ui| {
+            ui.heading(&self.title);
+        });
+        egui::CentralPanel::default().show(ctx, |ui| {
+            self.plot.ui_embed(ui);
+        });
+    }
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -130,7 +139,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .and_then(|name| name.to_str())
         .unwrap_or(filepath);
     
-    let app = create_plot_app(traces);
+    let app = PlotItApp::new(filename, traces);
     
     let title = format!("PlotIt - {}", filename);
     eframe::run_native(
